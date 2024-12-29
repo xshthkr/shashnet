@@ -9,17 +9,17 @@
 
 #define assert(cond, msg, cleanup) if (!(cond)) { perror(msg); cleanup; exit(EXIT_FAILURE); }
 
-Packet create_packet(uint32_t seq_num, uint32_t ack_num, const char *message) {
-    Packet packet;
-    packet.seq_num = seq_num;
-    packet.ack_num = ack_num;
-    packet.checksum = checksum(message, strlen(message));
-    packet.data_length = strlen(message);
-    strcpy(packet.payload, message);
-    return packet;
+int init_packet(Packet *packet, uint32_t seq_num, uint32_t ack_num, const char *message) {
+    memset(packet, 0, sizeof(*packet));
+    packet->seq_num = seq_num;
+    packet->ack_num = ack_num;
+    packet->checksum = checksum(message, strlen(message));
+    packet->data_length = strlen(message);
+    strcpy(packet->payload, message);
+    return 0;
 }
 
-int validate_packet(Packet *packet) {
+int validate_packet_checksum(Packet *packet) {
     return packet->checksum == checksum(packet->payload, packet->data_length);
 }
 
@@ -52,14 +52,15 @@ int create_receiver_socket(Receiver *receiver, int port) {
 int start_handshake(Sender *sender) {
 
     // send connection request to server
-    Packet packet = create_packet(sender->seq_num++, 0, "SYN");
+    Packet packet;
+    init_packet(&packet, sender->seq_num++, 0, "SYN");
     sendto(sender->sockfd, &packet, sizeof(Packet), 0, (struct sockaddr *)&sender->server_addr, sender->server_addr_len);
 
     printf("Sent SYN to %s:%d\n", inet_ntoa(sender->server_addr.sin_addr), sender->server_addr.sin_port);
 
     // wait for server response
     recvfrom(sender->sockfd, &packet, sizeof(Packet), 0, NULL, NULL);
-    assert(validate_packet(&packet), "Invalid checksum", NULL);
+    assert(validate_packet_checksum(&packet), "Invalid checksum", NULL);
 
 
     // send connection response to server
@@ -67,7 +68,7 @@ int start_handshake(Sender *sender) {
         printf("Received SYN, ACK\n");
         
         char *message = "ACK";
-        packet = create_packet(sender->seq_num++, packet.seq_num + 1, message);
+        init_packet(&packet, sender->seq_num++, packet.seq_num + 1, message);
         sendto(sender->sockfd, &packet, sizeof(Packet), 0, (struct sockaddr *)&sender->server_addr, sender->server_addr_len);
         
         printf("Sent ACK\n");
@@ -82,7 +83,7 @@ int accept_handshake(Receiver *receiver) {
     // wait for client connection request
     Packet packet;
     recvfrom(receiver->sockfd, &packet, sizeof(Packet), 0, (struct sockaddr *) &(receiver->client_addr), &(receiver->client_addr_len));
-    assert(validate_packet(&packet), "Invalid checksum", NULL);
+    assert(validate_packet_checksum(&packet), "Invalid checksum", NULL);
 
 
     // send connection response to client
@@ -90,7 +91,7 @@ int accept_handshake(Receiver *receiver) {
         printf("Received SYN from %s:%d\n", inet_ntoa(receiver->client_addr.sin_addr), receiver->client_addr.sin_port);
         
         char *message = "SYN, ACK";
-        packet = create_packet(receiver->seq_num++, packet.seq_num + 1, message);
+        init_packet(&packet, receiver->seq_num++, packet.seq_num + 1, message);
         sendto(receiver->sockfd, &packet, sizeof(Packet), 0, (struct sockaddr *) &(receiver->client_addr), receiver->client_addr_len);
         
         printf("Sent SYN, ACK\n");
@@ -99,7 +100,7 @@ int accept_handshake(Receiver *receiver) {
 
     // wait for client response
     recvfrom(receiver->sockfd, &packet, sizeof(Packet), 0, NULL, NULL);
-    assert(validate_packet(&packet), "Invalid checksum", NULL);
+    assert(validate_packet_checksum(&packet), "Invalid checksum", NULL);
     
     if (strcmp(packet.payload, "ACK") == 0) {
         printf("Received ACK\n");
