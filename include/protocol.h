@@ -33,8 +33,8 @@ typedef struct {
 int init_packet(Packet* packet, uint32_t seq_num, uint32_t ack_num, const char *message);
 int validate_packet_checksum(Packet *packet);
 
-int create_sender_socket(Sender *sender, int port, const char *server_addr);
-int create_receiver_socket(Receiver *receiver, int port);
+int create_client_socket(Sender *sender, int port, const char *server_addr);
+int create_server_socket(Receiver *receiver, int port);
 
 int start_handshake(Sender *sender);
 int accept_handshake(Receiver *receiver);
