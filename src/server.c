@@ -8,8 +8,8 @@
 int main() {
     
     Receiver receiver;
-    
-    create_receiver_socket(&receiver, PORT);
+
+    create_server_socket(&receiver, PORT);
 
     accept_handshake(&receiver);
 

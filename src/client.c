@@ -9,8 +9,8 @@
 int main() {
 
     Sender sender;
-    
-    create_sender_socket(&sender, PORT, SERVER_ADDR);
+
+    create_client_socket(&sender, PORT, SERVER_ADDR);
 
     start_handshake(&sender);
 
