@@ -7,11 +7,11 @@
 
 int main() {
     
-    Receiver receiver;
+    ShashnetServer server;
 
-    create_server_socket(&receiver, PORT);
+    create_server_socket(&server, PORT);
 
-    accept_handshake(&receiver);
+    accept_handshake(&server);
 
     return 0;
 }

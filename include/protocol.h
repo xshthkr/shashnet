@@ -20,7 +20,7 @@ typedef struct {
     struct sockaddr_in server_addr;
     socklen_t server_addr_len;
     int seq_num;
-} Sender;
+} ShashnetClient;
 
 typedef struct {
     int sockfd;
@@ -28,15 +28,15 @@ typedef struct {
     struct sockaddr_in client_addr;
     socklen_t client_addr_len;
     int seq_num;
-} Receiver;
+} ShashnetServer;
 
 int init_packet(Packet* packet, uint32_t seq_num, uint32_t ack_num, const char *message);
 int validate_packet_checksum(Packet *packet);
 
-int create_client_socket(Sender *sender, int port, const char *server_addr);
-int create_server_socket(Receiver *receiver, int port);
+int create_client_socket(ShashnetClient *sender, int port, const char *server_addr);
+int create_server_socket(ShashnetServer *receiver, int port);
 
-int start_handshake(Sender *sender);
-int accept_handshake(Receiver *receiver);
+int start_handshake(ShashnetClient *sender);
+int accept_handshake(ShashnetServer *receiver);
 
 #endif // protocol

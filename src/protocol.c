@@ -23,7 +23,7 @@ int validate_packet_checksum(Packet *packet) {
     return packet->checksum == checksum(packet->payload, packet->data_length);
 }
 
-int create_client_socket(Sender *sender, int port, const char *server_addr) {
+int create_client_socket(ShashnetClient *sender, int port, const char *server_addr) {
     sender->server_addr_len = sizeof(sender->server_addr);
 
     assert((sender->sockfd = socket(AF_INET, SOCK_DGRAM, 0)) >= 0, "Socket creation failed", NULL);
@@ -35,7 +35,7 @@ int create_client_socket(Sender *sender, int port, const char *server_addr) {
     return 0;
 }
 
-int create_server_socket(Receiver *receiver, int port) {
+int create_server_socket(ShashnetServer *receiver, int port) {
     receiver->client_addr_len = sizeof(receiver->client_addr);
     
     assert((receiver->sockfd = socket(AF_INET, SOCK_DGRAM, 0)) >= 0, "Socket creation failed", NULL);
@@ -49,7 +49,7 @@ int create_server_socket(Receiver *receiver, int port) {
     return 0;
 }
 
-int start_handshake(Sender *sender) {
+int start_handshake(ShashnetClient *sender) {
 
     // send connection request to server
     Packet packet;
@@ -78,7 +78,7 @@ int start_handshake(Sender *sender) {
 
 }
 
-int accept_handshake(Receiver *receiver) {
+int accept_handshake(ShashnetServer *receiver) {
 
     // wait for client connection request
     Packet packet;
@@ -96,7 +96,6 @@ int accept_handshake(Receiver *receiver) {
         
         printf("Sent SYN, ACK\n");
     }
-
 
     // wait for client response
     recvfrom(receiver->sockfd, &packet, sizeof(Packet), 0, NULL, NULL);

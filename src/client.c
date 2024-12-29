@@ -8,11 +8,11 @@
 
 int main() {
 
-    Sender sender;
+    ShashnetClient client;
 
-    create_client_socket(&sender, PORT, SERVER_ADDR);
+    create_client_socket(&client, PORT, SERVER_ADDR);
 
-    start_handshake(&sender);
+    start_handshake(&client);
 
     return 0;
 }
