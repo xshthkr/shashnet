@@ -23,7 +23,7 @@ int validate_packet_checksum(Packet *packet) {
     return packet->checksum == checksum(packet->payload, packet->data_length);
 }
 
-int create_sender_socket(Sender *sender, int port, const char *server_addr) {
+int create_client_socket(Sender *sender, int port, const char *server_addr) {
     sender->server_addr_len = sizeof(sender->server_addr);
 
     assert((sender->sockfd = socket(AF_INET, SOCK_DGRAM, 0)) >= 0, "Socket creation failed", NULL);
@@ -35,7 +35,7 @@ int create_sender_socket(Sender *sender, int port, const char *server_addr) {
     return 0;
 }
 
-int create_receiver_socket(Receiver *receiver, int port) {
+int create_server_socket(Receiver *receiver, int port) {
     receiver->client_addr_len = sizeof(receiver->client_addr);
     
     assert((receiver->sockfd = socket(AF_INET, SOCK_DGRAM, 0)) >= 0, "Socket creation failed", NULL);
