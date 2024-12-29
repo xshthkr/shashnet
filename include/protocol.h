@@ -28,11 +28,10 @@ typedef struct {
     struct sockaddr_in client_addr;
     socklen_t client_addr_len;
     int seq_num;
-    
 } Receiver;
 
-Packet create_packet(uint32_t seq_num, uint32_t ack_num, const char *message);
-int validate_packet(Packet *packet);
+int init_packet(Packet* packet, uint32_t seq_num, uint32_t ack_num, const char *message);
+int validate_packet_checksum(Packet *packet);
 
 int create_sender_socket(Sender *sender, int port, const char *server_addr);
 int create_receiver_socket(Receiver *receiver, int port);
