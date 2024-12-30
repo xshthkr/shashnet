@@ -32,7 +32,6 @@ int send_packet_client(ShashnetClient *sender, char *message) {
     
     // send packet
     sendto(sender->sockfd, &packet, sizeof(Packet), 0, (struct sockaddr *) &sender->server_addr, sender->server_addr_len);
-    sender->seq_num++;
 
     //debug
     printf("Sent DATA packet\n");
@@ -50,15 +49,13 @@ int send_packet_client(ShashnetClient *sender, char *message) {
         printf("Received ACK/NAK packet\n");
         print_packet(&ackpacket);
 
-        // if ACK received then break out of loop, else resend packet
-        if (ackpacket.ack_num == sender->seq_num) {
-            break;
-        } else {
-            
-            // debug
-            printf("Resending DATA packet\n");
-
+        // if received packet is invalid of not ACK, resend packet
+        if (!validate_packet_checksum(&ackpacket) || strcmp(ackpacket.payload, "NAK") == 0) {
             sendto(sender->sockfd, &packet, sizeof(Packet), 0, (struct sockaddr *) &sender->server_addr, sender->server_addr_len);
+            continue;
+        } else {
+            sender->seq_num = sender->seq_num + 1 % 2;  // toggle sequence number
+            break;
         }
     }
 
@@ -70,34 +67,47 @@ int recv_packet_server(ShashnetServer *receiver, char *message) {
     
     /* state 1: receive packet from client */
 
-    // receive packet
-    Packet packet;
-    recvfrom(receiver->sockfd, &packet, sizeof(Packet), 0, (struct sockaddr *) &receiver->client_addr, &receiver->client_addr_len);
+    while (1) {
 
-    // debug
-    printf("Received DATA packet\n");
-    print_packet(&packet);
+        // receive packet
+        Packet packet;
+        recvfrom(receiver->sockfd, &packet, sizeof(Packet), 0, (struct sockaddr *) &receiver->client_addr, &receiver->client_addr_len);
 
-    // if packet is valid, send ACK, else send NAK
-    if (validate_packet_checksum(&packet)) {
-        // extract message from packet
-        strcpy(message, packet.payload);
-        receiver->ack_num = packet.seq_num + 1;
-        init_packet(&packet, receiver->seq_num, receiver->ack_num, "ACK");
-        sendto(receiver->sockfd, &packet, sizeof(Packet), 0, (struct sockaddr *) &receiver->client_addr, receiver->client_addr_len);
-    
         // debug
-        printf("Sent ACK packet\n");
+        printf("Received DATA packet\n");
         print_packet(&packet);
-    
-    } else {
-        init_packet(&packet, receiver->seq_num, receiver->ack_num, "NAK");
-        sendto(receiver->sockfd, &packet, sizeof(Packet), 0, (struct sockaddr *) &receiver->client_addr, receiver->client_addr_len);
-    
-        // debug
-        printf("Sent NAK packet\n");
-        print_packet(&packet);
-    
+
+        // if packet is valid and has correct sequence number, send ACK
+        if (validate_packet_checksum(&packet) && packet.seq_num == receiver->seq_num) {
+            // extract message from packet
+            strcpy(message, packet.payload);
+            receiver->ack_num = packet.seq_num + 1;
+            init_packet(&packet, receiver->seq_num, receiver->ack_num, "ACK");
+            sendto(receiver->sockfd, &packet, sizeof(Packet), 0, (struct sockaddr *) &receiver->client_addr, receiver->client_addr_len);
+        
+            // debug
+            printf("Sent ACK packet\n");
+            print_packet(&packet);
+
+            receiver->seq_num = receiver->seq_num + 1 % 2;  // toggle sequence number
+            break;
+        
+        } else if (!validate_packet_checksum(&packet)) { // if packet is corrupted, send NAK
+            init_packet(&packet, receiver->seq_num, receiver->ack_num, "NAK");
+            sendto(receiver->sockfd, &packet, sizeof(Packet), 0, (struct sockaddr *) &receiver->client_addr, receiver->client_addr_len);
+        
+            // debug
+            printf("Sent NAK packet\n");
+            print_packet(&packet);
+        
+        } else {    // if packet is duplicate, send ACK again
+            init_packet(&packet, receiver->seq_num, receiver->ack_num, "ACK");
+            sendto(receiver->sockfd, &packet, sizeof(Packet), 0, (struct sockaddr *) &receiver->client_addr, receiver->client_addr_len);
+
+            // debug
+            printf("Sent ACK packet\n");
+            print_packet(&packet);
+        }
     }
 
     return 0;
