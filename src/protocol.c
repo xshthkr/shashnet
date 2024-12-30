@@ -1,4 +1,5 @@
 #include <protocol.h>
+#include <transport.h>
 #include <utils.h>
 
 #include <stdio.h>
