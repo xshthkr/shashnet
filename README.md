@@ -1,5 +1,7 @@
 # Shashnet
 
+![Compilation](https://github.com/github/docs/actions/workflows/main.yml/badge.svg)
+
 A custom application layer protocol for reliable, ordered and lossless data transfer over UDP.
 
 ## Resources
