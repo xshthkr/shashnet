@@ -32,6 +32,7 @@ int send_packet_client(ShashnetClient *sender, char *message) {
     
     // send packet
     sendto(sender->sockfd, &packet, sizeof(Packet), 0, (struct sockaddr *) &sender->server_addr, sender->server_addr_len);
+    sender->seq_num = sender->seq_num + 1 % 2;  // toggle sequence number
 
     //debug
     printf("Sent DATA packet\n");
@@ -49,12 +50,11 @@ int send_packet_client(ShashnetClient *sender, char *message) {
         printf("Received ACK/NAK packet\n");
         print_packet(&ackpacket);
 
-        // if received packet is invalid of not ACK, resend packet
-        if (!validate_packet_checksum(&ackpacket) || strcmp(ackpacket.payload, "NAK") == 0) {
+        // if received packet is corrupted of not duplicate ACK, resend packet
+        if (!validate_packet_checksum(&ackpacket) || ackpacket.seq_num != sender->ack_num) {
             sendto(sender->sockfd, &packet, sizeof(Packet), 0, (struct sockaddr *) &sender->server_addr, sender->server_addr_len);
             continue;
         } else {
-            sender->seq_num = sender->seq_num + 1 % 2;  // toggle sequence number
             break;
         }
     }
@@ -84,16 +84,16 @@ int recv_packet_server(ShashnetServer *receiver, char *message) {
             receiver->ack_num = packet.seq_num + 1;
             init_packet(&packet, receiver->seq_num, receiver->ack_num, "ACK");
             sendto(receiver->sockfd, &packet, sizeof(Packet), 0, (struct sockaddr *) &receiver->client_addr, receiver->client_addr_len);
+            receiver->seq_num = receiver->seq_num + 1 % 2;  // toggle sequence number
         
             // debug
             printf("Sent ACK packet\n");
             print_packet(&packet);
 
-            receiver->seq_num = receiver->seq_num + 1 % 2;  // toggle sequence number
             break;
         
-        } else if (!validate_packet_checksum(&packet)) { // if packet is corrupted, send NAK
-            init_packet(&packet, receiver->seq_num, receiver->ack_num, "NAK");
+        } else if (!validate_packet_checksum(&packet)) { // if packet is corrupted, send duplicate ACK
+            init_packet(&packet, packet.ack_num, receiver->ack_num, "ACK");
             sendto(receiver->sockfd, &packet, sizeof(Packet), 0, (struct sockaddr *) &receiver->client_addr, receiver->client_addr_len);
         
             // debug
