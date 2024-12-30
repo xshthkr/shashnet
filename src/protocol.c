@@ -115,7 +115,8 @@ int accept_handshake(ShashnetServer *receiver) {
         print_packet(&packet);
 
         char *message = "SYN, ACK";
-        init_packet(&packet, receiver->seq_num++, packet.seq_num + 1, message);
+        receiver->ack_num = packet.seq_num + 1;
+        init_packet(&packet, receiver->seq_num++, receiver->ack_num, message);
         sendto(receiver->sockfd, &packet, sizeof(Packet), 0, (struct sockaddr *) &(receiver->client_addr), receiver->client_addr_len);
         
         // debug
