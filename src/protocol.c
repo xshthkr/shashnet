@@ -39,6 +39,7 @@ int create_client_socket(ShashnetClient *sender, int port, const char *server_ad
     assert(inet_pton(AF_INET, server_addr, &sender->server_addr.sin_addr) > 0, "Invalid address", NULL);
 
     sender->seq_num = seq_num;
+    sender->ack_num = 0;
     
     return 0;
 }
@@ -53,6 +54,7 @@ int create_server_socket(ShashnetServer *receiver, int port, int seq_num) {
     receiver->server_addr.sin_port = htons(port);
 
     receiver->seq_num = seq_num;
+    receiver->ack_num = 0;
     
     assert(bind(receiver->sockfd, (struct sockaddr *)&receiver->server_addr, sizeof(receiver->server_addr)) >= 0, "Bind failed", close(receiver->sockfd));
     
