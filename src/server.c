@@ -12,18 +12,9 @@ int main() {
 
     create_server_socket(&server, PORT, 20);
 
-    accept_handshake(&server);
-
-    Packet packet, ackpacket;
-    recv_pkt_server(&server, &packet, &ackpacket);
-
-    // debug
-    printf("Received DATA packet\n");
-    print_packet(&packet);
-    printf("Sent DATA-ACK packet\n");
-    print_packet(&ackpacket);
-
-    close_server_connection(&server);
+    char message[1024];
+    recv_packet_server(&server, message);
+    printf("Received: %s\n", message);
 
     return 0;
 }
