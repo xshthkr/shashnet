@@ -78,7 +78,7 @@ int recv_packet_server(ShashnetServer *receiver, char *message) {
         print_packet(&packet);
 
         // if packet is valid and has correct sequence number, send ACK
-        if (validate_packet_checksum(&packet)) {
+        if (validate_packet_checksum(&packet) && packet.seq_num == receiver->ack_num) {
             // extract message from packet
             strcpy(message, packet.payload);
             receiver->ack_num = packet.seq_num + 1;
