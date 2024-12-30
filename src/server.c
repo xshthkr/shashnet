@@ -10,7 +10,7 @@ int main() {
     
     ShashnetServer server;
 
-    create_server_socket(&server, PORT, 20);
+    create_server_socket(&server, PORT, 0);
 
     char message[1024];
     recv_packet_server(&server, message);

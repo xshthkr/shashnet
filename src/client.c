@@ -11,7 +11,7 @@ int main() {
 
     ShashnetClient client;
 
-    create_client_socket(&client, PORT, SERVER_ADDR, 10);
+    create_client_socket(&client, PORT, SERVER_ADDR, 0);
 
     send_packet_client(&client, "Hello, World!");
     printf("Sent: Hello, World!\n");
