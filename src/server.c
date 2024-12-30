@@ -12,10 +12,14 @@ int main() {
 
     create_server_socket(&server, PORT, 0);
 
+    accept_handshake(&server);
+
     char message[1024];
     recv_packet_server(&server, message);
     recv_packet_server(&server, message);
     recv_packet_server(&server, message);
+
+    close_server_connection(&server);
 
     return 0;
 }

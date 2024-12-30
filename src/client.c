@@ -13,9 +13,13 @@ int main() {
 
     create_client_socket(&client, PORT, SERVER_ADDR, 0);
 
+    start_handshake(&client);
+
     send_packet_client(&client, "Hello, World 1!");
     send_packet_client(&client, "Hello, World 2!");
     send_packet_client(&client, "Hello, World 3!");
+
+    close_client_connection(&client);
 
     return 0;
 }
