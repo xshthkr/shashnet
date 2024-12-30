@@ -13,8 +13,9 @@ int main() {
 
     create_client_socket(&client, PORT, SERVER_ADDR, 0);
 
-    send_packet_client(&client, "Hello, World!");
-    printf("Sent: Hello, World!\n");
+    send_packet_client(&client, "Hello, World 1!");
+    send_packet_client(&client, "Hello, World 2!");
+    send_packet_client(&client, "Hello, World 3!");
 
     return 0;
 }

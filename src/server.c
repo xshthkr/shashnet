@@ -14,7 +14,8 @@ int main() {
 
     char message[1024];
     recv_packet_server(&server, message);
-    printf("Received: %s\n", message);
+    recv_packet_server(&server, message);
+    recv_packet_server(&server, message);
 
     return 0;
 }
