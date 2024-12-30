@@ -1,6 +1,6 @@
 # Shashnet
 
-![Compilation](https://github.com/github/docs/actions/workflows/c-cpp.yml/badge.svg)
+![Compilation](https://github.com/xshthkr/shashnet/actions/workflows/c-cpp.yml/badge.svg)
 
 A custom application layer protocol for reliable, ordered and lossless data transfer over UDP.
 
