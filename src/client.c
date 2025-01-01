@@ -10,8 +10,11 @@
 int main() {
 
     ShashnetClient client;
+    create_client_socket(&client, PORT, SERVER_ADDR, 10);
 
-    create_client_socket(&client, PORT, SERVER_ADDR, 0);
+    // start handshake
+    // thread 1: send packet
+    // thread 2: receive packet
 
     start_handshake(&client);
 
