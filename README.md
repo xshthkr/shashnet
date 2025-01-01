@@ -4,6 +4,18 @@
 
 A custom application layer protocol for reliable, ordered and lossless data transfer over UDP.
 
+## Architecture
+
+### Server
+
+Thread 1: Welcoming socket received incoming packets
+
+![alt text](<assets/server-thread 1.drawio.png>)
+
+Thread 2: Broadcast messages to clients
+
+![alt text](<assets/server-thread 2.drawio.png>)
+
 ## Resources
 
 - [UDP (RFC 768)](https://www.ietf.org/rfc/rfc768.txt)
