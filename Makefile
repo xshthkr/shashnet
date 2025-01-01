@@ -14,8 +14,8 @@ SERVER_SRC := $(SRC_DIR)/server.c
 PROTOCOL_SRC := $(SRC_DIR)/protocol.c
 UTILS_SRC := $(SRC_DIR)/utils.c
 TRANSPORT_SRC := $(SRC_DIR)/transport.c
-TEST_CLIENT_SRC := $(TEST_DIR)/test_client.c
-TEST_SERVER_SRC := $(TEST_DIR)/test_server.c
+TEST_CLIENT_SRC := $(TEST_DIR)/client.c
+TEST_SERVER_SRC := $(TEST_DIR)/server.c
 
 CLIENT_OBJ := $(BIN_DIR)/client.o
 SERVER_OBJ := $(BIN_DIR)/server.o
