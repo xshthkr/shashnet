@@ -1,6 +1,5 @@
 // TODO:
 // Implement sliding window and buffering
-// poll or epoll, socket timeout, select (limited, legacy)
 
 #include <transport.h>
 #include <protocol.h>
@@ -8,7 +7,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
 #include <unistd.h>
 #include <sys/epoll.h>
 
@@ -18,13 +16,13 @@
 #define assert(cond, msg, cleanup) if (!(cond)) { perror(msg); cleanup; exit(EXIT_FAILURE); }
 
 // client sends packet to server
-int send_packet_client(ShashnetClient *sender, char *message) {
+int send_packet_client(ShashnetClient *sender, char *data) {
 
     /* state 1: waiting for call to send data */
 
     // make packet
     Packet packet;
-    init_packet(&packet, sender->seq_num, sender->ack_num, message);    // checksum computed internally
+    init_packet(&packet, sender->seq_num, sender->ack_num, data);    // checksum computed internally
     
     int epollfd, nfds;
     struct epoll_event event, events[MAX_EVENTS];
@@ -38,7 +36,9 @@ int send_packet_client(ShashnetClient *sender, char *message) {
     event.data.fd = sender->sockfd;
     assert(epoll_ctl(epollfd, EPOLL_CTL_ADD, sender->sockfd, &event) >= 0, "epoll_ctl failed", close(sender->sockfd));
 
-    while (1) {
+    int retries = 10;
+
+    while (retries--) {
         
         // send packet
         ssize_t bytes = sendto(sender->sockfd, &packet, sizeof(Packet), 0, (struct sockaddr *) &sender->server_addr, sender->server_addr_len);
@@ -86,7 +86,7 @@ int send_packet_client(ShashnetClient *sender, char *message) {
 }
 
 // server receives packet
-int recv_packet_server(ShashnetServer *receiver, char *message) {
+int recv_packet_server(ShashnetServer *receiver, char *data) {
     
     /* state 1: wait for call to receive packet from client */
 
@@ -105,8 +105,8 @@ int recv_packet_server(ShashnetServer *receiver, char *message) {
 
         // if packet is valid and has correct sequence number, send ACK
         if (validate_packet_checksum(&packet) && packet.seq_num == receiver->ack_num) {
-            // extract message from packet
-            strcpy(message, packet.payload);
+            // extract data from packet
+            strcpy(data, packet.payload);
             receiver->ack_num = packet.seq_num + 1;
             init_packet(&packet, receiver->seq_num, receiver->ack_num, "ACK");
             ssize_t bytes = sendto(receiver->sockfd, &packet, sizeof(Packet), 0, (struct sockaddr *) &receiver->client_addr, receiver->client_addr_len);
