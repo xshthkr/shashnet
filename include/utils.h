@@ -3,23 +3,22 @@
 
 #include <protocol.h>
 
-#include <stdint.h>
+typedef struct PacketNode {
+    Packet packet;
+    struct PacketNode *next;
+} PacketNode;
 
 typedef struct {
-    Packet *packets;
-    uint8_t front;
-    uint8_t rear;
-} Queue;
+    PacketNode *head;
+    PacketNode *tail;
+} PacketQueue;
 
 uint16_t checksum(const char *data, int len);
 
-int init_queue(Queue *queue);
-int enqueue(Queue *queue, Packet *packet);
-int dequeue(Queue *queue, Packet *packet);
-int is_empty(Queue *queue);
-int is_full(Queue *queue);
-Packet *front(Queue *queue);
-Packet *rear(Queue *queue);
-void print_queue(Queue *queue);
+// packet queue
+int packet_queue_init(PacketQueue *queue);
+int packet_enqueue(PacketQueue *queue, Packet *packet);
+Packet *packet_dequeue(PacketQueue *queue, Packet *packet);
+int packet_queue_is_empty(PacketQueue *queue);
 
 #endif // utils
