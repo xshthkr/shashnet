@@ -2,51 +2,128 @@
 #include <transport.h>
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <pthread.h>
+#include <sys/epoll.h>
 
-#define PORT 12345
+#define PORT1 12345
+#define PORT2 12346
 #define MAX_BUF_LEN 1024
 
+#define assert(cond, msg, cleanup) if (!(cond)) { perror(msg); cleanup; exit(EXIT_FAILURE); }
+
+Shashnet serverSender, serverReceiver;
+char clientNickname[10], serverNickname[10];
+
+int test1();
+void *test_send(void *arg);
+void *test_recv(void *arg);
+
+int test2();
+
+int test3();
+
 int main() {
+    test1();
+    return 0;
+}
+
+// P2P connection
+int test1() {
+
     
-    ShashnetServer server;
-    create_server_socket(&server, PORT, 20);
+    create_server_socket(&serverReceiver, PORT1, 20);
+    accept_handshake(&serverReceiver);
 
-    // thread 1: receive packet
-    // if payload is "SYN", client to hash table
-    //      set hash table state to 1
-    //      send SYN, ACK
-    //      set hash table state to 2
-    //      if payload is "ACK", set hash table state to 3
-    //      create connection socket
-    //      enqueue "joined" message to message queue
-    // if client is in hash table
-    //      if payload is "FIN", set hash table state to 4
-    //          send FIN, ACK
-    //          set hash table state to 5
-    //          if payload is "ACK", set hash table state to 6
-    //          close connection
-    //          remove client from hash table
-    //          enqueue "left" message to message queue
-    //      else enqueue payload to message queue
-    // else ignore packet
+    char client_addr[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, &(serverReceiver.client_addr.sin_addr), client_addr, INET_ADDRSTRLEN);
+    create_client_socket(&serverSender, PORT2, client_addr, 10);
+    start_handshake(&serverSender);
 
-    // thread 2: broadcast packet
-    // if message queue is not empty
-    //      dequeue message
-    //      loop through hash table connection sockets
-    //      send message to client
+    printf("Enter nickname: ");
+    fgets(serverNickname, sizeof(serverNickname), stdin);
+    serverNickname[strlen(serverNickname) - 1] = '\0';
 
-    // thread 3: print hash table every 5 seconds
-    // src ip, src port, state, socket address
+    pthread_t send_thread, recv_thread;
 
-    accept_handshake(&server);
+    recv_packet_server(&serverReceiver, clientNickname);
+    send_packet_client(&serverSender, serverNickname);
 
-    char message[1024];
-    recv_packet_server(&server, message);
-    recv_packet_server(&server, message);
-    recv_packet_server(&server, message);
+    assert(pthread_create(&send_thread, NULL, test_send, &serverSender) == 0, "Send thread creation failed", close(serverSender.sockfd));
+    assert(pthread_create(&recv_thread, NULL, test_recv, &serverReceiver) == 0, "Recv thread creation failed", close(serverReceiver.sockfd));
 
-    close_server_connection(&server);
+    printf("Connection established\n");
+
+    pthread_join(send_thread, NULL);
+    pthread_join(recv_thread, NULL);
+
+    close_server_connection(&serverSender);
+    close_client_connection(&serverReceiver);
 
     return 0;
 }
+
+void *test_send(void *arg) {
+
+    while(1) {
+
+        char message[MAX_BUF_LEN];
+        fgets(message, sizeof(message), stdin);
+        message[strlen(message) - 1] = '\0';
+
+        send_packet_client(&serverSender, message);
+
+    }
+
+    return NULL;
+}
+
+void *test_recv(void *arg) {
+    while (1) {
+        char message[MAX_BUF_LEN] = {0};
+
+        recv_packet_server(&serverReceiver, message);
+
+        printf("<%s> %s\n", clientNickname, message);
+        fflush(stdout);
+
+        usleep(100000);
+    }
+    return NULL;
+}
+
+// standard test
+// int test2() {
+
+//     create_server_socket(&server, PORT, 20);
+//     accept_handshake(&server);
+//     char message[MAX_BUF_LEN];
+
+//     recv_packet_server(&server, message);
+//     printf("Received: %s\n", message);
+//     fflush(stdout);
+
+//     send_packet_server(&server, "Hello, world! from server 1");
+
+//     recv_packet_server(&server, message);
+//     printf("Received: %s\n", message);
+//     fflush(stdout);
+
+//     recv_packet_server(&server, message);
+//     printf("Received: %s\n", message);
+//     fflush(stdout);
+
+//     send_packet_server(&server, "Hello, world! from server 2");
+
+//     close_server_connection(&server);
+
+//     return 0;
+// }
+
+
+// test separate ports
+// int test3() {
+//     return 0;
+// }
