@@ -8,38 +8,40 @@
 #include <pthread.h>
 #include <sys/epoll.h>
 
-#define PORT1 12345
-#define PORT2 12346
+#define KNOWN_SERVER_PORT 12345
 #define MAX_BUF_LEN 1024
 
 #define assert(cond, msg, cleanup) if (!(cond)) { perror(msg); cleanup; exit(EXIT_FAILURE); }
 
 Shashnet serverSender, serverReceiver;
-char clientNickname[10], serverNickname[10];
 
-int test1();
+
+int p2p();
 void *test_send(void *arg);
 void *test_recv(void *arg);
 
-int test2();
-
-int test3();
-
 int main() {
-    test1();
+    p2p();
     return 0;
 }
 
 // P2P connection
-int test1() {
-
+int p2p() {
     
-    create_server_socket(&serverReceiver, PORT1, 20);
+    // create server receiver socket with servers own port
+    create_server_socket(&serverReceiver, KNOWN_SERVER_PORT, 20);
     accept_handshake(&serverReceiver);
+
+    // receive client receiver port
+    char clientReceiverPort[10];
+    recv_packet_server(&serverReceiver, clientReceiverPort);
+    int CLIENT_RECEIVER_PORT = atoi(clientReceiverPort);
 
     char client_addr[INET_ADDRSTRLEN];
     inet_ntop(AF_INET, &(serverReceiver.client_addr.sin_addr), client_addr, INET_ADDRSTRLEN);
-    create_client_socket(&serverSender, PORT2, client_addr, 10);
+    
+    // create server sender socket with client address and port
+    create_client_socket(&serverSender, CLIENT_RECEIVER_PORT, client_addr, 10);
     start_handshake(&serverSender);
 
     printf("Enter nickname: ");

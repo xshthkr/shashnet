@@ -25,17 +25,17 @@ int validate_packet_checksum(Packet *packet) {
 }
 
 void print_packet(Packet *packet) {
-    printf("[SEQ:%d] [ACK:%d] [PAYLOAD:%s]\n\n", packet->seq_num, packet->ack_num, packet->payload);
+    printf("[SEQ:%d] [ACK:%d] [PAYLOAD:%s]\n", packet->seq_num, packet->ack_num, packet->payload);
     return;
 }
 
-int create_client_socket(Shashnet *sender, int port, const char *server_addr, int seq_num) {
+int create_client_socket(Shashnet *sender, int server_port, const char *server_addr, int seq_num) {
     sender->server_addr_len = sizeof(sender->server_addr);
 
     assert((sender->sockfd = socket(AF_INET, SOCK_DGRAM, 0)) >= 0, "Socket creation failed", NULL);
     
     sender->server_addr.sin_family = AF_INET;
-    sender->server_addr.sin_port = htons(port);
+    sender->server_addr.sin_port = htons(server_port);
     assert(inet_pton(AF_INET, server_addr, &sender->server_addr.sin_addr) > 0, "Invalid address", NULL);
 
     sender->seq_num = seq_num;
@@ -44,14 +44,14 @@ int create_client_socket(Shashnet *sender, int port, const char *server_addr, in
     return 0;
 }
 
-int create_server_socket(Shashnet *receiver, int port, int seq_num) {
+int create_server_socket(Shashnet *receiver, int server_port, int seq_num) {
     receiver->client_addr_len = sizeof(receiver->client_addr);
     
     assert((receiver->sockfd = socket(AF_INET, SOCK_DGRAM, 0)) >= 0, "Socket creation failed", NULL);
     
     receiver->server_addr.sin_family = AF_INET;
     receiver->server_addr.sin_addr.s_addr = INADDR_ANY;
-    receiver->server_addr.sin_port = htons(port);
+    receiver->server_addr.sin_port = htons(server_port);
 
     receiver->seq_num = seq_num;
     receiver->ack_num = 0;
@@ -70,8 +70,8 @@ int start_handshake(Shashnet *sender) {
     sendto(sender->sockfd, &packet, sizeof(Packet), 0, (struct sockaddr *)&sender->server_addr, sender->server_addr_len);
 
     // debug
-    // printf("Sent SYN to %s:%d\n", inet_ntoa(sender->server_addr.sin_addr), sender->server_addr.sin_port);
-    // print_packet(&packet);
+    printf("Sent SYN to %s:%d\n", inet_ntoa(sender->server_addr.sin_addr), sender->server_addr.sin_port);
+    print_packet(&packet);
 
     // wait for server response
     recvfrom(sender->sockfd, &packet, sizeof(Packet), 0, NULL, NULL);
@@ -81,8 +81,8 @@ int start_handshake(Shashnet *sender) {
     if (strcmp(packet.payload, "SYN, ACK") == 0) {
         
         // debug
-        // printf("Received SYN, ACK\n");
-        // print_packet(&packet);
+        printf("RECV SYN, ACK: ");
+        print_packet(&packet);
         
         char *message = "ACK";
         sender->ack_num = packet.seq_num + 1;
@@ -90,11 +90,11 @@ int start_handshake(Shashnet *sender) {
         sendto(sender->sockfd, &packet, sizeof(Packet), 0, (struct sockaddr *)&sender->server_addr, sender->server_addr_len);
         
         // debug
-        // printf("Sent ACK\n");
-        // print_packet(&packet);
+        printf("SENT ACK: ");
+        print_packet(&packet);
     }
 
-    // printf("Handshake complete!\n\n");
+    printf("Handshake complete!\n");
 
     return 0;
 
@@ -114,8 +114,8 @@ int accept_handshake(Shashnet *receiver) {
     if (strcmp(packet.payload, "SYN") == 0) {
         
         // debug
-        // printf("Received SYN from %s:%d\n", inet_ntoa(receiver->client_addr.sin_addr), receiver->client_addr.sin_port);
-        // print_packet(&packet);
+        printf("Received SYN from %s:%d\n", inet_ntoa(receiver->client_addr.sin_addr), receiver->client_addr.sin_port);
+        print_packet(&packet);
 
         char *message = "SYN, ACK";
         receiver->ack_num = packet.seq_num + 1;
@@ -123,8 +123,8 @@ int accept_handshake(Shashnet *receiver) {
         sendto(receiver->sockfd, &packet, sizeof(Packet), 0, (struct sockaddr *) &(receiver->client_addr), receiver->client_addr_len);
         
         // debug
-        // printf("Sent SYN, ACK\n");
-        // print_packet(&packet);
+        printf("SENT SYN, ACK: ");
+        print_packet(&packet);
     }
 
     // wait for client response
@@ -133,11 +133,11 @@ int accept_handshake(Shashnet *receiver) {
     
     if (strcmp(packet.payload, "ACK") == 0) {
         // debug
-        // printf("Received ACK\n");
-        // print_packet(&packet);
+        printf("RECV ACK: ");
+        print_packet(&packet);
     }
 
-    // printf("Handshake complete!\n\n");
+    printf("Handshake complete!\n");
 
     return 0;
 }
@@ -149,8 +149,8 @@ int close_client_connection(Shashnet *sender) {
     sendto(sender->sockfd, &packet, sizeof(Packet), 0, (struct sockaddr *)&sender->server_addr, sender->server_addr_len);
 
     // debug
-    // printf("Sent FIN\n");
-    // print_packet(&packet);
+    printf("SENT FIN: ");
+    print_packet(&packet);
 
     recvfrom(sender->sockfd, &packet, sizeof(Packet), 0, NULL, NULL);
     assert(validate_packet_checksum(&packet), "Invalid checksum", NULL);
@@ -158,19 +158,19 @@ int close_client_connection(Shashnet *sender) {
     if (strcmp(packet.payload, "FIN, ACK") == 0) {
 
         // debug
-        // printf("Received FIN, ACK\n");
-        // print_packet(&packet);
+        printf("RECV FIN, ACK: ");
+        print_packet(&packet);
         
         char *message = "ACK";
         init_packet(&packet, sender->seq_num++, packet.seq_num + 1, message);
         sendto(sender->sockfd, &packet, sizeof(Packet), 0, (struct sockaddr *)&sender->server_addr, sender->server_addr_len);
 
         // debug
-        // printf("Sent ACK\n");
-        // print_packet(&packet);
+        printf("SENT ACK: ");
+        print_packet(&packet);
     }
 
-    // printf("Connection closed!\n\n");
+    printf("Connection closed!\n");
 
     close(sender->sockfd);
     return 0;
@@ -185,16 +185,16 @@ int close_server_connection(Shashnet *receiver) {
     if (strcmp(packet.payload, "FIN") == 0) {
 
         // debug
-        // printf("Received FIN\n");
-        // print_packet(&packet);
+        printf("RECV FIN: ");
+        print_packet(&packet);
 
         char *message = "FIN, ACK";
         init_packet(&packet, receiver->seq_num++, packet.seq_num + 1, message);
         sendto(receiver->sockfd, &packet, sizeof(Packet), 0, (struct sockaddr *) &(receiver->client_addr), receiver->client_addr_len);
 
         // debug
-        // printf("Sent FIN, ACK\n");
-        // print_packet(&packet);
+        printf("SENT FIN, ACK: ");
+        print_packet(&packet);
     }
 
     recvfrom(receiver->sockfd, &packet, sizeof(Packet), 0, NULL, NULL);
@@ -202,11 +202,11 @@ int close_server_connection(Shashnet *receiver) {
 
     if (strcmp(packet.payload, "ACK") == 0) {
         // debug
-        // printf("Received ACK\n");
-        // print_packet(&packet);
+        printf("RECV ACK: ");
+        print_packet(&packet);
     }
 
-    // printf("Connection closed!\n\n");
+    printf("Connection closed!\n");
 
     close(receiver->sockfd);
     return 0;
