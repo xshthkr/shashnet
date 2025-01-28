@@ -14,6 +14,7 @@
 #define assert(cond, msg, cleanup) if (!(cond)) { perror(msg); cleanup; exit(EXIT_FAILURE); }
 
 Shashnet serverSender, serverReceiver;
+char clientNickname[10], serverNickname[10];
 
 
 int p2p();
